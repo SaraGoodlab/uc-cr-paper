@@ -1,32 +1,55 @@
-#!/bin/bash
-# Download RNA-seq FASTQ files from European Nucleotide Archive (ENA) using a sample mapping file
+#!/usr/bin/env bash
+# Download RNA-seq FASTQ files from ENA using a sample mapping file.
 
-set -euo pipefail 
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+DATA_DIR="${REPO_ROOT}/data"
+METADATA_DIR="${DATA_DIR}/metadata"
+RAW_DIR="${DATA_DIR}/raw"
 
 # Configuration
 ENA_PROJECT="${ENA_PROJECT:-PRJEB102830}"
-OUTPUT_DIR="${OUTPUT_DIR:-../../data/raw/rnaseq}"
-SAMPLE_MAPPING="${SAMPLE_MAPPING:-../../data/metadata/rnaseq.tsv}"  # Sample mapping file
+RNASEQ_OUTPUT="${RNASEQ_OUTPUT:-${RAW_DIR}/rnaseq}"
+RNASEQ_METADATA="${RNASEQ_METADATA:-${METADATA_DIR}/rnaseq.tsv}"
+ENA_REPORT_PATH="${ENA_REPORT_PATH:-${METADATA_DIR}/ena_file_report.tsv}"
 
-# Create output directories
-COLON_DIR="${OUTPUT_DIR}/colon"
-SPLEEN_DIR="${OUTPUT_DIR}/spleen"
-mkdir -p "${COLON_DIR}"
-mkdir -p "${SPLEEN_DIR}"
+mkdir -p "${RNASEQ_OUTPUT}"
+COLON_DIR="${RNASEQ_OUTPUT}/colon"
+SPLEEN_DIR="${RNASEQ_OUTPUT}/spleen"
+mkdir -p "${COLON_DIR}" "${SPLEEN_DIR}"
 
 echo "ENA RNA-seq Data Download"
 echo "ENA Project: ${ENA_PROJECT}"
-echo "Output directory: ${OUTPUT_DIR}"
+echo "Output directory: ${RNASEQ_OUTPUT}"
+
+normalize_tissue() {
+    local tissue_raw="${1:-}"
+    local normalized
+    normalized="$(echo "${tissue_raw}" | tr '[:upper:]' '[:lower:]' | tr -d ' _')"
+    case "${normalized}" in
+        colon|colonic|distalcolon)
+            echo "colon"
+            ;;
+        spleen|splenic)
+            echo "spleen"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
 
 # Download file report from ENA
-REPORT_URL="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${ENA_PROJECT}&result=read_run&fields=run_accession,sample_accession,submitted_ftp&format=tsv&download=true"
-    
-if [[ ! -f "../../data/metadata/ena_file_report.tsv" ]]; then
+REPORT_URL="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${ENA_PROJECT}&result=read_run&fields=run_accession,sample_accession,fastq_ftp&format=tsv&download=true"
+
+if [[ ! -f "${ENA_REPORT_PATH}" ]]; then
     echo "Fetching file report from ENA..."
-    wget -q -O "../../data/metadata/ena_file_report.tsv" "${REPORT_URL}"
+    wget -q -O "${ENA_REPORT_PATH}" "${REPORT_URL}"
 fi
 
-if [[ ! -f "../../data/metadata/ena_file_report.tsv" ]]; then
+if [[ ! -f "${ENA_REPORT_PATH}" ]]; then
     echo "Error: Failed to download ENA file report"
     exit 1
 fi
@@ -35,7 +58,7 @@ fi
 declare -A SAMPLE_TO_TISSUE
 declare -A SAMPLE_TO_SAMPLE_ID
 
-echo "Loading sample mapping from ${SAMPLE_MAPPING}..."
+echo "Loading sample mapping from ${RNASEQ_METADATA}..."
 
 # Column positions (0-based indexing for array)
 SAMPLE_ACC_COL=0
@@ -57,7 +80,7 @@ while IFS=$'\t' read -r -a FIELDS; do
     
     # Extract fields (0-based array indexing, with default empty string if unset)
     sample_accession="${FIELDS[$SAMPLE_ACC_COL]:-}"
-    tissue="${FIELDS[$TISSUE_COL]:-}"
+    tissue="$(normalize_tissue "${FIELDS[$TISSUE_COL]:-}")"
     sample_id="${FIELDS[$SAMPLE_ID_COL]:-}"
     
     # Validate required fields
@@ -67,8 +90,6 @@ while IFS=$'\t' read -r -a FIELDS; do
     fi
     
     # Normalize tissue name (lowercase, remove spaces)
-    tissue=$(echo "$tissue" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
-    
     # Store mappings
     case "$tissue" in
         colon)
@@ -84,7 +105,7 @@ while IFS=$'\t' read -r -a FIELDS; do
             continue
             ;;
     esac
-done < "${SAMPLE_MAPPING}"
+done < "${RNASEQ_METADATA}"
 
 # Parse file report and download FASTQ files
 DOWNLOADED=0
@@ -92,7 +113,7 @@ SKIPPED=0
 ERRORS=0
 
 echo "Processing ENA file report..."
-while IFS=$'\t' read -r run_accession sample_accession submitted_ftp; do
+while IFS=$'\t' read -r run_accession sample_accession fastq_ftp; do
     # Skip header
     [[ "$run_accession" == "run_accession" ]] && continue
     [[ -z "$run_accession" ]] && continue
@@ -111,7 +132,7 @@ while IFS=$'\t' read -r run_accession sample_accession submitted_ftp; do
     fi
     
     # Download paired-end files
-    if [[ -z "$submitted_ftp" ]]; then
+    if [[ -z "$fastq_ftp" ]]; then
         echo "Warning: No FASTQ FTP URL for ${run_accession}, skipping..."
         SKIPPED=$((SKIPPED + 1))
         continue
@@ -125,7 +146,7 @@ while IFS=$'\t' read -r run_accession sample_accession submitted_ftp; do
     fi
     
     echo "[${run_accession}] Downloading to ${TARGET_DIR} (sample_id: ${sample_id})..."
-    IFS=';' read -ra FILES <<< "$submitted_ftp"
+    IFS=';' read -ra FILES <<< "$fastq_ftp"
     
     # Determine read number for paired-end files
     for i in "${!FILES[@]}"; do
@@ -159,7 +180,7 @@ while IFS=$'\t' read -r run_accession sample_accession submitted_ftp; do
             ERRORS=$((ERRORS + 1))
         fi
     done
-done < "../../data/metadata/ena_file_report.tsv"
+done < "${ENA_REPORT_PATH}"
 
 echo ""
 echo "Download Summary"
@@ -173,7 +194,7 @@ echo "  Spleen: ${SPLEEN_DIR}"
 echo ""
 
 # Verify downloads
-TOTAL_FILES=$(find "${OUTPUT_DIR}" -name "*.fastq.gz" 2>/dev/null | wc -l)
+TOTAL_FILES=$(find "${RNASEQ_OUTPUT}" -name "*.fastq.gz" 2>/dev/null | wc -l)
 echo "Total FASTQ files: ${TOTAL_FILES}"
 
 if [[ ${ERRORS} -gt 0 ]]; then
