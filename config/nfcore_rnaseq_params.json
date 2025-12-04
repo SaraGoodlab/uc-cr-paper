@@ -1,0 +1,15 @@
+{
+    "input": "data\/metadata\/nfcore_samplesheet.csv",
+    "outdir": "data\/processed\/rnaseq\/nfcore",
+    "multiqc_title": "DSS-induced IBD in mice",
+    "fasta": "data\/external\/reference\/GRCm39\/GCF_000001635.27_GRCm39_genomic.fna",
+    "gtf": "data\/external\/reference\/GRCm39\/GCF_000001635.27_GRCm39_genomic.gtf",
+    "transcript_fasta": "data\/external\/reference\/GRCm39\/GCF_000001635.27_GRCm39_rna.fna",
+    "aligner": "star_rsem",
+    "trimmer": "fastp",
+    "skip_bigwig": true,
+    "skip_stringtie": true,
+    "skip_dupradar": true,
+    "skip_qualimap": true,
+    "skip_rseqc": true
+}
