@@ -1,0 +1,5 @@
+use-singularity: true
+singularitry-args: ""
+cores: 8
+latency-wait: 60
+printshellcmds: true
