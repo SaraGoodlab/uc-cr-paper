@@ -1,0 +1,68 @@
+"""
+Main Snakemake workflow for UC-CR paper analysis
+
+This workflow orchestrates:
+1. RNA-seq analysis (DESeq2)
+2. Pathway analysis (GSEA)
+3. Human UC meta-analysis
+4. Microbiome analysis
+
+Usage:
+    snakemake --cores 8 all               # Run all analyses
+    snakemake --cores 8 rnaseq            # Run only RNA-seq analysis
+    snakemake --cores 8 pathway           # Run only pathway analysis analysis
+    snakemake --cores 8 meta              # Run only microarray meta-analysis
+"""
+
+from pathlib import Path
+
+# Load configuration
+configfile: "config.yaml"
+
+# Define project-relative directories
+PROJECT_DIR = Path("..")
+CODE_DIR = PROJECT_DIR / "code"
+DATA_DIR = PROJECT_DIR / "data"
+RESULTS_DIR = PROJECT_DIR / "results"
+LOG_DIR = PROJECT_DIR / "logs"
+FIGURES_DIR = PROJECT_DIR / "figures"
+TABLES_DIR = PROJECT_DIR / "tables"
+
+# Include modular rule files
+include: "rules/_common.smk"
+include: "rules/rnaseq.smk"
+include: "rules/pathway_analysis.smk"
+include: "rules/human_meta_analysis.smk"
+include: "rules/microbiome.smk"
+
+# Default target: run all analyses
+rule all:
+    input:
+        # RNA-seq results
+        rnaseq_degs = RESULTS_DIR / "rnaseq" / "deseq2_results" / "summary_degs.txt",
+        # Pathway analysis results
+        gsea_results = RESULTS_DIR / "pathway_analysis" / "mouse_gsea" / "summary_pathways.txt",
+        # Microbiome results
+        microbiome_summary = RESULTS_DIR / "microbiome" / "diversity" / "summary_diversity.txt"
+
+# Convenience targets for running individual analyses
+rule rnaseq:
+    input:
+        rnaseq_degs = RESULTS_DIR / "rnaseq" / "deseq2_results" / "summary_degs.txt",
+        rnaseq_table = TABLES_DIR / "rnaseq" / "differential_expression.rnaseq.csv",
+        rnaseq_pca_plot = FIGURES_DIR / "rnaseq" / "pca_plots" / "pca_all_samples.png",
+        rnaseq_pca_data = RESULTS_DIR / "rnaseq" / "quality_metrics" / "pca_results.csv"
+
+rule pathway:
+    input:
+        gsea_results = RESULTS_DIR / "pathway_analysis" / "mouse_gsea" / "summary_pathways.txt"
+
+rule microbiome:
+    input:
+        microbiome_summary = RESULTS_DIR / "microbiome" / "diversity" / "summary_diversity.txt"
+
+rule meta:
+    input:
+        active_vs_control = RESULTS_DIR / "human_meta_analysis" / "meta_analysis" / "active_vs_control.csv",
+        inactive_vs_control = RESULTS_DIR / "human_meta_analysis" / "meta_analysis" / "inactive_vs_control.csv",
+        active_vs_inactive = RESULTS_DIR / "human_meta_analysis" / "meta_analysis" / "active_vs_inactive.csv"
