@@ -1,6 +1,6 @@
 executor: slurm
 use-singularity: true
-singularitry-args: ""
+singularity-args: ""
 jobs: 50
 latency-wait: 60
 printshellcmds: true
