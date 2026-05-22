@@ -1,0 +1,144 @@
+executor: slurm
+use-singularity: true
+singularitry-args: ""
+jobs: 50
+latency-wait: 60
+printshellcmds: true
+set-threads:
+  all: 1
+  rnaseq: 1
+  pathway: 1
+  microbiome: 1
+  collect_rsem_counts: 8
+  quality_control: 4
+  pca_analysis: 4
+  deseq2_analysis: 8
+  summarize_rnaseq_results: 1
+  prepare_gsea_ranks: 2
+  run_gsea_kegg: 4
+  summarize_pathway_results: 1
+  download_geo_data: 1
+  preprocess_geo_dataset: 4
+  limma_analysis: 4
+  metavolcanor_analysis: 4
+  microbiome_manifest: 1
+  qiime_import_reads: 4
+  qiime_denoise_ccs: 8
+  qiime_assign_taxonomy: 8
+  qiime_filter_features: 2
+  filter_contaminants: 2
+  filter_low_depth_samples: 2
+  filter_representative_sequences: 2
+  build_phylogeny: 8
+  export_asv_table: 2
+  export_taxonomy_table: 1
+  export_phylogenetic_tree: 1
+  beta_diversity: 4
+  alpha_diversity: 4
+  rademu_differential_abundance: 4
+  taxonomic_abundance_analysis: 4
+  phyloseq_prevalence_analysis: 4
+  summarize_microbiome: 1
+set-resources:
+  all:
+    mem_mb: 512
+    runtime: 5
+  rnaseq:
+    mem_mb: 512
+    runtime: 5
+  pathway:
+    mem_mb: 512
+    runtime: 5
+  microbiome:
+    mem_mb: 512
+    runtime: 5
+  collect_rsem_counts:
+    mem_mb: 16000
+    runtime: 240
+  quality_control:
+    mem_mb: 12000
+    runtime: 120
+  pca_analysis:
+    mem_mb: 8000
+    runtime: 90
+  deseq2_analysis:
+    mem_mb: 32000
+    runtime: 480
+  summarize_rnaseq_results:
+    mem_mb: 4000
+    runtime: 30
+  prepare_gsea_ranks:
+    mem_mb: 8000
+    runtime: 60
+  run_gsea_kegg:
+    mem_mb: 12000
+    runtime: 180
+  summarize_pathway_results:
+    mem_mb: 4000
+    runtime: 40
+  download_geo_data:
+    mem_mb: 4000
+    runtime: 120
+  preprocess_geo_dataset:
+    mem_mb: 16000
+    runtime: 240
+  limma_analysis:
+    mem_mb: 16000
+    runtime: 180
+  metavolcanor_analysis:
+    mem_mb: 24000
+    runtime: 300
+  microbiome_manifest:
+    mem_mb: 4000
+    runtime: 30
+  qiime_import_reads:
+    mem_mb: 16000
+    runtime: 120
+  qiime_denoise_ccs:
+    mem_mb: 48000
+    runtime: 720
+  qiime_assign_taxonomy:
+    mem_mb: 32000
+    runtime: 360
+  qiime_filter_features:
+    mem_mb: 8000
+    runtime: 60
+  filter_contaminants:
+    mem_mb: 8000
+    runtime: 60
+  filter_low_depth_samples:
+    mem_mb: 8000
+    runtime: 60
+  filter_representative_sequences:
+    mem_mb: 8000
+    runtime: 60
+  build_phylogeny:
+    mem_mb: 32000
+    runtime: 360
+  export_asv_table:
+    mem_mb: 8000
+    runtime: 60
+  export_taxonomy_table:
+    mem_mb: 4000
+    runtime: 30
+  export_phylogenetic_tree:
+    mem_mb: 4000
+    runtime: 30
+  beta_diversity:
+    mem_mb: 16000
+    runtime: 180
+  alpha_diversity:
+    mem_mb: 16000
+    runtime: 180
+  rademu_differential_abundance:
+    mem_mb: 16000
+    runtime: 240
+  taxonomic_abundance_analysis:
+    mem_mb: 16000
+    runtime: 180
+  phyloseq_prevalence_analysis:
+    mem_mb: 16000
+    runtime: 240
+  summarize_microbiome:
+    mem_mb: 4000
+    runtime: 30
