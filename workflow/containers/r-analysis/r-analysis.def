@@ -1,0 +1,25 @@
+Bootstrap: docker
+From: rocker/r-ver:4.4.1
+
+%environment
+
+export RANG_PATH=/rang.R
+
+%files
+
+rang.R /rang.R
+
+%post
+
+export RANG_PATH=/rang.R
+	apt-get update -qq \
+		&& apt-get install -y libpcre3-dev zlib1g-dev pkg-config libcurl4-openssl-dev \
+		&& apt-get install -y libcairo2-dev libfontconfig1-dev libfreetype6-dev libglpk-dev libicu-dev libpng-dev libssl-dev libx11-dev libxml2-dev make pandoc
+	Rscript $RANG_PATH
+	Rscript -e 'install.packages(c("remotes", "RColorBrewer"), repos = "https://cran.r-project.org/")'
+	Rscript -e 'BiocManager::install("DivNet", ask = FALSE, update = FALSE)'
+	Rscript -e 'remotes::install_github("statdivlab/radEmu", upgrade = "never")'
+
+%startscript
+
+exec R "${@}"
